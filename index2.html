@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#1b263b" />
+
+<title>Compras do Mês</title>
+<style>
+  /* Estilo para os campos opcionais de mercado e dinheiro total */
+  #mercado, #dinheiroTotal {
+    display: block;
+    width: 80%;
+    max-width: 400px;
+    margin: 10px auto 20px auto;
+    padding: 12px 15px;
+    font-size: 1.1em;
+    background-color: #223254; /* tom mais escuro que os inputs normais */
+    border: 2px solid #4da3ff; /* borda azul clara */
+    border-radius: 12px;
+    color: #a9d1ff;
+    box-shadow: 0 0 10px #4da3ff44; /* brilho azul suave */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    font-variant-ligatures: none; /* desativa ligadura */
+  }
+
+  #mercado:focus, #dinheiroTotal:focus {
+    outline: none;
+    border-color: #2ecc71; /* verde vivo no foco */
+    box-shadow: 0 0 12px #2ecc7144;
+    background-color: #1b263b;
+    color: #d0e9ff;
+    font-weight: 600;
+  }
+
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #0d1b2a;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-variant-ligatures: none; /* desativa ligadura no body todo */
+  }
+  header {
+    background-color: #1b263b;
+    text-align: center;
+    padding: 15px;
+    position: relative; /* Adicionado para posicionar o botão de ajuda */
+  }
+  header h1 {
+    margin: 5px 0;
+  }
+  header p {
+    font-size: 0.9em;
+    color: #ccc;
+  }
+  .card {
+    background: #182538;
+    padding: 15px;
+    border-radius: 10px;
+    max-width: 900px;
+    margin: 15px auto;
+    overflow-x: auto;
+  }
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  input, button {
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    font-variant-ligatures: none;
+  }
+  input {
+    background-color: #1e2e46;
+    color: #fff;
+  }
+  button.add {
+    background-color: #2ecc71;
+    color: white;
+    font-weight: bold;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 0.95em;
+  }
+  th, td {
+    padding: 8px;
+    text-align: left;
+  }
+  th {
+    color: #ccc;
+  }
+  td {
+    border-top: 1px solid #2c3e50;
+  }
+  td.quantidade {
+    text-align: center;
+  }
+  td.acoes {
+    text-align: center;
+  }
+  button.edit, button.delete {
+    padding: 5px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin: 0 2px;
+  }
+  button.edit {
+    background-color: #f1c40f;
+    color: #000;
+  }
+  button.delete {
+    background-color: #e74c3c;
+    color: white;
+  }
+  tfoot td {
+    font-weight: bold;
+    color: #4da3ff;
+  }
+  .pdf-btn {
+    margin-top: 10px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .file-btn {
+    margin-top: 10px;
+    background-color: #9b59b6;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 10px;
+  }
+  footer {
+    text-align: center;
+    padding: 10px;
+    background-color: #1b263b;
+    font-size: 0.85em;
+    margin-top: auto;
+    color: #aaa;
+  }
+  .buttons-container {
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  /* nova classe para exibir o saldo restante */
+  .saldo {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #2ecc71;
+  }
+  /* Botão apagar tudo */
+  button.clear-all {
+    background-color: #e67e22;
+    color: white;
+    font-weight: bold;
+  }
+  /* Estilos para o novo botão de salvar no histórico */
+  .save-history-btn {
+    background-color: #9b59b6; /* Cor roxa */
+    color: white;
+    font-weight: bold;
+  }
+  /* Estilos para a seção de histórico */
+  .history-container {
+    margin-top: 30px;
+  }
+  .history-container h2 {
+    color: #4da3ff;
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  .history-list {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .history-item {
+    background-color: #223254;
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+  }
+  .history-item p {
+    margin: 0;
+    line-height: 1.4;
+  }
+  .history-item p:first-child {
+    font-weight: bold;
+  }
+  .history-item .history-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .history-item .history-actions button {
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+  }
+  .history-item .history-actions .delete-history-btn {
+    background-color: #e74c3c;
+    color: white;
+  }
+  .history-item .history-actions .open-history-btn {
+    background-color: #3498db;
+    color: white;
+  }
+  .history-item .history-actions .pdf-history-btn {
+    background-color: #2ecc71;
+    color: white;
+  }
+
+  /* Estilos para o botão de ajuda */
+  .help-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #4da3ff;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    font-size: 1.2em;
+    cursor: pointer;
+    line-height: 1;
+  }
+  /* Estilos para a modal */
+  .modal {
+    display: none; /* Escondido por padrão */
+    position: fixed; /* Posição fixa */
+    z-index: 1; /* Fica acima de todo o resto */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Habilita scroll se necessário */
+    background-color: rgba(0, 0, 0, 0.6); /* Fundo semi-transparente */
+  }
+  .modal-content {
+    background-color: #1e2e46;
+    margin: 15% auto; /* 15% do topo e centralizado */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+  }
+  .close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+  }
+  .close-button:hover,
+  .close-button:focus {
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .modal-content h2 {
+    color: #4da3ff;
+    margin-top: 0;
+  }
+  .modal-content p {
+    color: #ccc;
+    font-size: 1em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Compras do Mês</h1>
+  <p>Adicione, edite e remova itens. Salve em PDF para manter seu controle de compras.</p>
+  <button class="help-button" id="helpButton">❓</button>
+</header>
+
+<div class="card">
+  <input type="text" id="mercado" placeholder="Nome do mercado (opcional)" />
+  <input type="number" id="dinheiroTotal" placeholder="Dinheiro total para gastos (opcional)" min="0" step="0.01" />
+
+  <form id="form">
+    <input type="text" id="produto" placeholder="Produto (ex: Arroz ou Maçã)" required />
+    <input type="number" id="quantidade" placeholder="Quantidade" min="0.1" step="0.1" required />
+    <input type="number" id="valor" placeholder="Valor unitário" step="0.01" required />
+    <button type="submit" class="add">Adicionar</button>
+  </form>
+
+  <table id="tabela">
+    <thead>
+      <tr>
+        <th>Produto</th>
+        <th>Quantidade</th>
+        <th>Valor Unit.</th>
+        <th>Total</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4">TOTAL</td>
+        <td id="totalGeral">R$ 0,00</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div id="saldoRestante" class="saldo" style="display:none;"></div>
+
+  <div class="buttons-container">
+    <button class="pdf-btn" onclick="exportarListaAtualPDF()">📝 Exportar PDF da lista atual</button>
+    <button class="save-history-btn" onclick="salvarHistorico()">💾 Salvar Compra no Histórico</button>
+    <button class="clear-all" onclick="apagarTudo()">🗑️ Apagar Tudo</button>
+  </div>
+</div>
+
+<div class="card history-container">
+  <h2>Histórico de Compras</h2>
+  <div class="history-list" id="history-list">
+    </div>
+</div>
+
+<footer>
+  Criado por Bruno Deringer 🙂
+</footer>
+
+<div id="helpModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">&times;</span>
+    <h2>Como usar o Compras do Mês</h2>
+    <p>
+      Este aplicativo foi criado para ajudá-lo a controlar suas compras de forma simples e rápida.
+    </p>
+    <p>
+      🛒 **Adicionar Itens:**<br>
+      Preencha o nome do produto, a quantidade e o valor unitário nos campos. Clique em "Adicionar" para incluir o item na lista. O total será calculado automaticamente.
+    </p>
+    <p>
+      📝 **Gerenciar a Lista:**<br>
+      - Use os botões ✏️ e 🗑️ na tabela para editar ou remover um item.
+      - A tabela calcula o total geral de todos os itens.
+      - Se você preencher o campo "Dinheiro total para gastos", o aplicativo mostrará quanto dinheiro sobra.
+    </p>
+    <p>
+      💾 **Histórico de Compras:**<br>
+      - Quando terminar uma compra, clique em "Salvar Compra no Histórico". A lista atual será limpa e movida para o histórico, onde você pode consultá-la depois.
+      - No histórico, você pode:
+        - 📂 Abrir uma compra para editá-la novamente.
+        - 📄 Gerar um PDF da compra específica.
+        - ❌ Remover a compra do histórico.
+    </p>
+    <p>
+      🗑️ **Apagar Tudo:**<br>
+      O botão "Apagar Tudo" limpa a lista de compras atual, mas o histórico permanece intacto.
+    </p>
+    <p>
+      Aproveite!
+    </p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  let itens = [];
+  let historicoCompras = [];
+  let editIndex = -1;
+
+  const form = document.getElementById('form');
+  
+  function openModal() {
+    const helpModal = document.getElementById('helpModal');
+    if (helpModal) {
+      helpModal.style.display = "block";
+    }
+  }
+
+  function closeModal() {
+    const helpModal = document.getElementById('helpModal');
+    if (helpModal) {
+      helpModal.style.display = "none";
+    }
+  }
+
+  window.onclick = function(event) {
+    const helpModal = document.getElementById('helpModal');
+    if (helpModal && event.target === helpModal) {
+      closeModal();
+    }
+  }
+
+  /* Carrega dados do localStorage */
+  function carregarLocalStorage() {
+    const dados = localStorage.getItem('comprasDados');
+    const historico = localStorage.getItem('historicoCompras');
+    if (dados) {
+      try {
+        const obj = JSON.parse(dados);
+        if(obj.itens && Array.isArray(obj.itens)){
+          itens = obj.itens;
+          document.getElementById('mercado').value = obj.mercado || '';
+          document.getElementById('dinheiroTotal').value = (obj.dinheiroTotal !== undefined && obj.dinheiroTotal !== null) ? obj.dinheiroTotal : '';
+        }
+      } catch (e) {
+        console.error("Erro ao carregar dados da lista atual do localStorage:", e);
+      }
+    }
+    if (historico) {
+      try {
+        historicoCompras = JSON.parse(historico);
+      } catch (e) {
+        console.error("Erro ao carregar histórico do localStorage:", e);
+      }
+    }
+    atualizarTabela();
+    atualizarHistorico();
+  }
+
+  /* Salva dados no localStorage */
+  function salvarLocalStorage() {
+    const mercado = document.getElementById('mercado').value.trim() || null;
+    const dinheiroTotalVal = document.getElementById('dinheiroTotal').value;
+    const dinheiroTotal = (dinheiroTotalVal !== '') ? parseFloat(dinheiroTotalVal) : null;
+    const dadosParaSalvar = {
+      mercado,
+      dinheiroTotal,
+      itens
+    };
+    localStorage.setItem('comprasDados', JSON.stringify(dadosParaSalvar));
+    localStorage.setItem('historicoCompras', JSON.stringify(historicoCompras));
+  }
+
+  /* Atualiza tabela e salva automaticamente */
+  function atualizarTabela(){
+    let tbody = document.querySelector('#tabela tbody');
+    tbody.innerHTML = '';
+    let totalGeral = 0;
+    itens.forEach((item, index) => {
+      let total = item.quantidade * item.valor;
+      totalGeral += total;
+      tbody.innerHTML += `
+        <tr>
+          <td>${item.produto}</td>
+          <td class="quantidade">${item.quantidade}</td>
+          <td>R$ ${item.valor.toFixed(2).replace('.', ',')}</td>
+          <td>R$ ${total.toFixed(2).replace('.', ',')}</td>
+          <td class="acoes">
+            <button class="edit" onclick="editarItem(${index})" aria-label="Editar item">✏️</button>
+            <button class="delete" onclick="removerItem(${index})" aria-label="Remover item">🗑️</button>
+          </td>
+        </tr>
+      `;
+    });
+    document.getElementById('totalGeral').innerText = "R$ " + totalGeral.toFixed(2).replace('.', ',');
+
+    const dinheiroTotalVal = document.getElementById('dinheiroTotal').value;
+    const saldoDiv = document.getElementById('saldoRestante');
+    if(dinheiroTotalVal !== ''){
+      const dinheiroTotal = parseFloat(dinheiroTotalVal);
+      if(!isNaN(dinheiroTotal)){
+        const sobra = dinheiroTotal - totalGeral;
+        saldoDiv.style.display = 'block';
+        saldoDiv.innerText = `💰 Dinheiro que sobra: R$ ${sobra.toFixed(2).replace('.', ',')}`;
+      } else {
+        saldoDiv.style.display = 'none';
+        saldoDiv.innerText = '';
+      }
+    } else {
+      saldoDiv.style.display = 'none';
+      saldoDiv.innerText = '';
+    }
+
+    salvarLocalStorage();
+  }
+
+  /* Atualiza a exibição do histórico */
+  function atualizarHistorico() {
+    const historyList = document.getElementById('history-list');
+    historyList.innerHTML = '';
+    if (historicoCompras.length === 0) {
+      historyList.innerHTML = '<p style="text-align: center; color: #aaa;">Nenhum item no histórico.</p>';
+      return;
+    }
+
+    historicoCompras.forEach((compra, index) => {
+      const historyItem = document.createElement('div');
+      historyItem.classList.add('history-item');
+      
+      let mercadoInfo = compra.mercado && compra.mercado !== 'Não especificado' ? `<p>Mercado: ${compra.mercado}</p>` : '';
+
+      historyItem.innerHTML = `
+        <div>
+          <p>Data: ${compra.dataCompra}</p>
+          ${mercadoInfo}
+          <p>Total: R$ ${compra.totalGeral.toFixed(2).replace('.', ',')}</p>
+        </div>
+        <div class="history-actions">
+          <button class="pdf-history-btn" onclick="exportarHistoricoPDF(${index})" aria-label="Exportar para PDF">📄 PDF</button>
+          <button class="open-history-btn" onclick="abrirCompraDoHistorico(${index})" aria-label="Abrir esta compra">📂 Abrir</button>
+          <button class="delete-history-btn" onclick="removerDoHistorico(${index})" aria-label="Remover do histórico">❌</button>
+        </div>
+      `;
+      historyList.appendChild(historyItem);
+    });
+    salvarLocalStorage();
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    let produto = document.getElementById('produto').value.trim();
+    let quantidade = parseFloat(document.getElementById('quantidade').value);
+    let valor = parseFloat(document.getElementById('valor').value);
+
+    if(!produto || quantidade <= 0 || valor <= 0){
+      alert("Por favor, preencha os campos corretamente.");
+      return;
+    }
+
+    if(editIndex === -1){
+      itens.push({produto, quantidade, valor});
+    } else {
+      itens[editIndex] = {produto, quantidade, valor};
+      editIndex = -1;
+    }
+    atualizarTabela();
+    this.reset();
+  });
+
+  function editarItem(index){
+    document.getElementById('produto').value = itens[index].produto;
+    document.getElementById('quantidade').value = itens[index].quantidade;
+    document.getElementById('valor').value = itens[index].valor;
+    editIndex = index;
+  }
+
+  function removerItem(index){
+    if(confirm("Deseja remover este item?")){
+      itens.splice(index, 1);
+      atualizarTabela();
+    }
+  }
+
+  function apagarTudo(){
+    if(confirm("Tem certeza que deseja apagar todos os itens da lista atual?")){
+      itens = [];
+      document.getElementById('mercado').value = '';
+      document.getElementById('dinheiroTotal').value = '';
+      atualizarTabela();
+    }
+  }
+
+  function formatarDataParaNomeArquivo(data){
+    const pad = (n) => n.toString().padStart(2, '0');
+    const dia = pad(data.getDate());
+    const mes = pad(data.getMonth() + 1);
+    const ano = data.getFullYear();
+    const hora = pad(data.getHours());
+    const min = pad(data.getMinutes());
+    const seg = pad(data.getSeconds());
+    return `${dia}-${mes}-${ano}_${hora}-${min}-${seg}`;
+  }
+
+  function salvarHistorico() {
+    if (itens.length === 0) {
+      alert("A lista de compras está vazia. Adicione itens antes de salvar no histórico.");
+      return;
+    }
+    
+    const mercadoAtual = document.getElementById('mercado').value.trim();
+    const dinheiroTotalAtual = document.getElementById('dinheiroTotal').value;
+
+    const totalGeral = itens.reduce((acc, i) => acc + i.quantidade * i.valor, 0);
+    
+    const dadosCompra = {
+      dataCompra: new Date().toLocaleDateString('pt-BR'),
+      mercado: mercadoAtual || '',
+      dinheiroTotal: dinheiroTotalAtual !== '' ? parseFloat(dinheiroTotalAtual) : null,
+      totalGeral: totalGeral,
+      itens: [...itens]
+    };
+    historicoCompras.push(dadosCompra);
+    
+    itens = [];
+    document.getElementById('mercado').value = '';
+    document.getElementById('dinheiroTotal').value = '';
+    
+    atualizarTabela();
+    atualizarHistorico();
+    alert("Lista de compras salva no histórico!");
+  }
+
+  function removerDoHistorico(index) {
+    if(confirm("Deseja remover este item do histórico?")){
+      historicoCompras.splice(index, 1);
+      atualizarHistorico();
+    }
+  }
+
+  function abrirCompraDoHistorico(index) {
+    if(confirm("Deseja carregar esta compra para a lista atual? A lista atual será apagada.")){
+      const compraParaAbrir = historicoCompras[index];
+      
+      itens = [...compraParaAbrir.itens];
+      document.getElementById('mercado').value = compraParaAbrir.mercado || '';
+      document.getElementById('dinheiroTotal').value = (compraParaAbrir.dinheiroTotal !== undefined && compraParaAbrir.dinheiroTotal !== null) ? compraParaAbrir.dinheiroTotal : '';
+      
+      atualizarTabela();
+      alert("Compra do histórico carregada na lista atual!");
+    }
+  }
+  
+  function exportarListaAtualPDF(){
+    if(itens.length === 0){
+      alert("Nenhum item para exportar.");
+      return;
+    }
+    
+    const { jsPDF } = window.jspdf;
+    let doc = new jsPDF();
+    const dataAtual = new Date();
+
+    doc.setFontSize(18);
+    doc.text("Lista de Compras do Mês", 10, 10);
+
+    const dataFormatada = dataAtual.toLocaleDateString('pt-BR') + ' ' + dataAtual.toLocaleTimeString('pt-BR');
+    doc.setFontSize(12);
+    doc.text(`Data da compra: ${dataFormatada}`, 10, 18);
+
+    let y = 28;
+
+    const mercado = document.getElementById('mercado').value.trim();
+    const dinheiroTotalVal = document.getElementById('dinheiroTotal').value;
+    const dinheiroTotal = (dinheiroTotalVal !== '') ? parseFloat(dinheiroTotalVal) : null;
+
+    if(mercado){
+      doc.text(`Mercado: ${mercado}`, 10, y);
+      y += 8;
+    }
+    if(dinheiroTotal !== null && !isNaN(dinheiroTotal)){
+      doc.text(`Dinheiro total: R$ ${dinheiroTotal.toFixed(2).replace('.', ',')}`, 10, y);
+      y += 8;
+    }
+    
+    const currentTotalGeral = itens.reduce((acc, i) => acc + i.quantidade * i.valor, 0);
+
+    let startYItems = y + 5;
+    itens.forEach(item => {
+      let linha = `${item.produto} - Qtd: ${item.quantidade} - Unit: R$ ${item.valor.toFixed(2).replace('.', ',')} - Total: R$ ${(item.quantidade * item.valor).toFixed(2).replace('.', ',')}`;
+      doc.text(linha, 10, startYItems);
+      startYItems += 10;
+      if(startYItems > 280){
+        doc.addPage();
+        startYItems = 10;
+      }
+    });
+
+    doc.text(`TOTAL: R$ ${currentTotalGeral.toFixed(2).replace('.', ',')}`, 10, startYItems + 10);
+
+    if(dinheiroTotal !== null && !isNaN(dinheiroTotal)){
+      const sobra = dinheiroTotal - currentTotalGeral;
+      doc.text(`Dinheiro que sobra: R$ ${sobra.toFixed(2).replace('.', ',')}`, 10, startYItems + 18);
+    }
+
+    doc.save(`lista_compras_${formatarDataParaNomeArquivo(dataAtual)}.pdf`);
+  }
+  
+  function exportarHistoricoPDF(index) {
+    const compra = historicoCompras[index];
+    if (!compra) {
+      alert("Compra não encontrada no histórico.");
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    let doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text("Lista de Compras - Histórico", 10, 10);
+
+    doc.setFontSize(12);
+    doc.text(`Data da compra: ${compra.dataCompra}`, 10, 18);
+    
+    let y = 28;
+    
+    if (compra.mercado) {
+      doc.text(`Mercado: ${compra.mercado}`, 10, y);
+      y += 8;
+    }
+    if (compra.dinheiroTotal !== null && !isNaN(compra.dinheiroTotal)) {
+        doc.text(`Dinheiro total: R$ ${compra.dinheiroTotal.toFixed(2).replace('.', ',')}`, 10, y);
+        y += 8;
+    }
+    
+    let startYItems = y + 5;
+    compra.itens.forEach(item => {
+      let linha = `${item.produto} - Qtd: ${item.quantidade} - Unit: R$ ${item.valor.toFixed(2).replace('.', ',')} - Total: R$ ${(item.quantidade * item.valor).toFixed(2).replace('.', ',')}`;
+      doc.text(linha, 10, startYItems);
+      startYItems += 10;
+      if(startYItems > 280){
+        doc.addPage();
+        startYItems = 10;
+      }
+    });
+
+    doc.text(`TOTAL: R$ ${compra.totalGeral.toFixed(2).replace('.', ',')}`, 10, startYItems + 10);
+    
+    if (compra.dinheiroTotal !== null && !isNaN(compra.dinheiroTotal)) {
+        const sobra = compra.dinheiroTotal - compra.totalGeral;
+        doc.text(`Dinheiro que sobra: R$ ${sobra.toFixed(2).replace('.', ',')}`, 10, startYItems + 18);
+    }
+
+    doc.save(`compra_historico_${compra.dataCompra}.pdf`);
+  }
+
+  // Bloco de inicialização: roda quando a página está completamente carregada
+  window.onload = function() {
+    carregarLocalStorage();
+
+    // --- NOVA ABORDAGEM PARA O BOTÃO DE AJUDA ---
+    // 1. Encontra o botão de ajuda e o botão de fechar
+    const helpButton = document.getElementById('helpButton');
+    const closeButton = document.querySelector('#helpModal .close-button');
+
+    // 2. Adiciona os "ouvintes" de evento de clique
+    if (helpButton) {
+      helpButton.addEventListener('click', openModal);
+    }
+    if (closeButton) {
+      closeButton.addEventListener('click', closeModal);
+    }
+  }
+
+  /* Atualiza saldo se mudar dinheiro total ou mercado */
+  document.getElementById('dinheiroTotal').addEventListener('input', atualizarTabela);
+  document.getElementById('mercado').addEventListener('input', salvarLocalStorage);
+</script>
+
+</body>
+</html>
