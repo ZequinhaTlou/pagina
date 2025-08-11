@@ -49,6 +49,7 @@
     background-color: #1b263b;
     text-align: center;
     padding: 15px;
+    position: relative; /* Adicionado para posicionar o botão de ajuda */
   }
   header h1 {
     margin: 5px 0;
@@ -174,6 +175,123 @@
     color: white;
     font-weight: bold;
   }
+  /* Estilos para o novo botão de salvar no histórico */
+  .save-history-btn {
+    background-color: #9b59b6; /* Cor roxa */
+    color: white;
+    font-weight: bold;
+  }
+  /* Estilos para a seção de histórico */
+  .history-container {
+    margin-top: 30px;
+  }
+  .history-container h2 {
+    color: #4da3ff;
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  .history-list {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .history-item {
+    background-color: #223254;
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+  }
+  .history-item p {
+    margin: 0;
+    line-height: 1.4;
+  }
+  .history-item p:first-child {
+    font-weight: bold;
+  }
+  .history-item .history-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .history-item .history-actions button {
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+  }
+  .history-item .history-actions .delete-history-btn {
+    background-color: #e74c3c;
+    color: white;
+  }
+  .history-item .history-actions .open-history-btn {
+    background-color: #3498db;
+    color: white;
+  }
+  .history-item .history-actions .pdf-history-btn {
+    background-color: #2ecc71;
+    color: white;
+  }
+
+  /* Estilos para o botão de ajuda */
+  .help-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #4da3ff;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    font-size: 1.2em;
+    cursor: pointer;
+    line-height: 1;
+  }
+  /* Estilos para a modal */
+  .modal {
+    display: none; /* Escondido por padrão */
+    position: fixed; /* Posição fixa */
+    z-index: 1; /* Fica acima de todo o resto */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Habilita scroll se necessário */
+    background-color: rgba(0, 0, 0, 0.6); /* Fundo semi-transparente */
+  }
+  .modal-content {
+    background-color: #1e2e46;
+    margin: 15% auto; /* 15% do topo e centralizado */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+  }
+  .close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+  }
+  .close-button:hover,
+  .close-button:focus {
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .modal-content h2 {
+    color: #4da3ff;
+    margin-top: 0;
+  }
+  .modal-content p {
+    color: #ccc;
+    font-size: 1em;
+  }
 </style>
 </head>
 <body>
@@ -181,10 +299,10 @@
 <header>
   <h1>Compras do Mês</h1>
   <p>Adicione, edite e remova itens. Salve em PDF para manter seu controle de compras.</p>
+  <button class="help-button" onclick="openModal()">❓</button>
 </header>
 
 <div class="card">
-
   <input type="text" id="mercado" placeholder="Nome do mercado (opcional)" />
   <input type="number" id="dinheiroTotal" placeholder="Dinheiro total para gastos (opcional)" min="0" step="0.01" />
 
@@ -217,29 +335,70 @@
   <div id="saldoRestante" class="saldo" style="display:none;"></div>
 
   <div class="buttons-container">
-    <button class="pdf-btn" onclick="exportarPDF()">📝 Exportar PDF</button>
-    <button class="file-btn" onclick="salvarArquivo()">💼 Salvar arquivo</button>
-    <button class="file-btn" onclick="document.getElementById('inputFile').click()">📂 Abrir arquivo</button>
+    <button class="pdf-btn" onclick="exportarListaAtualPDF()">📝 Exportar PDF da lista atual</button>
+    <button class="save-history-btn" onclick="salvarHistorico()">💾 Salvar Compra no Histórico</button>
     <button class="clear-all" onclick="apagarTudo()">🗑️ Apagar Tudo</button>
-    <input type="file" id="inputFile" accept=".json" style="display:none" />
   </div>
+</div>
+
+<div class="card history-container">
+  <h2>Histórico de Compras</h2>
+  <div class="history-list" id="history-list">
+    </div>
 </div>
 
 <footer>
   Criado por Bruno Deringer 🙂
 </footer>
 
+<div id="helpModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button" onclick="closeModal()">&times;</span>
+    <h2>Como usar o Compras do Mês</h2>
+    <p>
+      Este aplicativo foi criado para ajudá-lo a controlar suas compras de forma simples e rápida.
+    </p>
+    <p>
+      🛒 **Adicionar Itens:**<br>
+      Preencha o nome do produto, a quantidade e o valor unitário nos campos. Clique em "Adicionar" para incluir o item na lista. O total será calculado automaticamente.
+    </p>
+    <p>
+      📝 **Gerenciar a Lista:**<br>
+      - Use os botões ✅ e ❌ na tabela para editar ou remover um item.
+      - A tabela calcula o total geral de todos os itens.
+      - Se você preencher o campo "Dinheiro total para gastos", o aplicativo mostrará quanto dinheiro sobra.
+    </p>
+    <p>
+      💾 **Histórico de Compras:**<br>
+      - Quando terminar uma compra, clique em "Salvar Compra no Histórico". A lista atual será limpa e movida para o histórico, onde você pode consultá-la depois.
+      - No histórico, você pode:
+        - 📂 Abrir uma compra para editá-la novamente.
+        - 📄 Gerar um PDF da compra específica.
+        - ❌ Remover a compra do histórico.
+    </p>
+    <p>
+      🗑️ **Apagar Tudo:**<br>
+      O botão "Apagar Tudo" limpa a lista de compras atual, mas o histórico permanece intacto.
+    </p>
+    <p>
+      Aproveite!
+    </p>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
   let itens = [];
+  let historicoCompras = [];
   let editIndex = -1;
 
   const form = document.getElementById('form');
-  const inputFile = document.getElementById('inputFile');
+  let helpModal;
 
   /* Carrega dados do localStorage */
   function carregarLocalStorage() {
     const dados = localStorage.getItem('comprasDados');
+    const historico = localStorage.getItem('historicoCompras');
     if (dados) {
       try {
         const obj = JSON.parse(dados);
@@ -247,12 +406,20 @@
           itens = obj.itens;
           document.getElementById('mercado').value = obj.mercado || '';
           document.getElementById('dinheiroTotal').value = (obj.dinheiroTotal !== undefined && obj.dinheiroTotal !== null) ? obj.dinheiroTotal : '';
-          atualizarTabela();
         }
-      } catch {
-        // Ignorar erro se JSON inválido
+      } catch (e) {
+        console.error("Erro ao carregar dados da lista atual do localStorage:", e);
       }
     }
+    if (historico) {
+      try {
+        historicoCompras = JSON.parse(historico);
+      } catch (e) {
+        console.error("Erro ao carregar histórico do localStorage:", e);
+      }
+    }
+    atualizarTabela();
+    atualizarHistorico();
   }
 
   /* Salva dados no localStorage */
@@ -266,6 +433,7 @@
       itens
     };
     localStorage.setItem('comprasDados', JSON.stringify(dadosParaSalvar));
+    localStorage.setItem('historicoCompras', JSON.stringify(historicoCompras));
   }
 
   /* Atualiza tabela e salva automaticamente */
@@ -283,8 +451,8 @@
           <td>R$ ${item.valor.toFixed(2).replace('.', ',')}</td>
           <td>R$ ${total.toFixed(2).replace('.', ',')}</td>
           <td class="acoes">
-            <button class="edit" onclick="editarItem(${index})" aria-label="Editar item">✏️</button>
-            <button class="delete" onclick="removerItem(${index})" aria-label="Remover item">🗑️</button>
+            <button class="edit" onclick="editarItem(${index})" aria-label="Editar item">✅</button>
+            <button class="delete" onclick="removerItem(${index})" aria-label="Remover item">❌</button>
           </td>
         </tr>
       `;
@@ -308,6 +476,38 @@
       saldoDiv.innerText = '';
     }
 
+    salvarLocalStorage();
+  }
+
+  /* Atualiza a exibição do histórico */
+  function atualizarHistorico() {
+    const historyList = document.getElementById('history-list');
+    historyList.innerHTML = '';
+    if (historicoCompras.length === 0) {
+      historyList.innerHTML = '<p style="text-align: center; color: #aaa;">Nenhum item no histórico.</p>';
+      return;
+    }
+
+    historicoCompras.forEach((compra, index) => {
+      const historyItem = document.createElement('div');
+      historyItem.classList.add('history-item');
+      
+      let mercadoInfo = compra.mercado && compra.mercado !== 'Não especificado' ? `<p>Mercado: ${compra.mercado}</p>` : '';
+
+      historyItem.innerHTML = `
+        <div>
+          <p>Data: ${compra.dataCompra}</p>
+          ${mercadoInfo}
+          <p>Total: R$ ${compra.totalGeral.toFixed(2).replace('.', ',')}</p>
+        </div>
+        <div class="history-actions">
+          <button class="pdf-history-btn" onclick="exportarHistoricoPDF(${index})" aria-label="Exportar para PDF">📄 PDF</button>
+          <button class="open-history-btn" onclick="abrirCompraDoHistorico(${index})" aria-label="Abrir esta compra">📂 Abrir</button>
+          <button class="delete-history-btn" onclick="removerDoHistorico(${index})" aria-label="Remover do histórico">❌</button>
+        </div>
+      `;
+      historyList.appendChild(historyItem);
+    });
     salvarLocalStorage();
   }
 
@@ -347,11 +547,11 @@
   }
 
   function apagarTudo(){
-    if(confirm("Tem certeza que deseja apagar todos os itens?")){
+    if(confirm("Tem certeza que deseja apagar todos os itens da lista atual?")){
       itens = [];
-      atualizarTabela();
       document.getElementById('mercado').value = '';
       document.getElementById('dinheiroTotal').value = '';
+      atualizarTabela();
     }
   }
 
@@ -366,48 +566,61 @@
     return `${dia}-${mes}-${ano}_${hora}-${min}-${seg}`;
   }
 
-  function salvarArquivo(){
-    if(itens.length === 0){
-      alert("Nenhum item para salvar.");
+  function salvarHistorico() {
+    if (itens.length === 0) {
+      alert("A lista de compras está vazia. Adicione itens antes de salvar no histórico.");
       return;
     }
-    const dataAtual = new Date();
-    const dataFormatada = dataAtual.toLocaleDateString('pt-BR') + ' ' + dataAtual.toLocaleTimeString('pt-BR');
-
-    const mercado = document.getElementById('mercado').value.trim() || null;
-    const dinheiroTotalVal = document.getElementById('dinheiroTotal').value;
-    const dinheiroTotal = (dinheiroTotalVal !== '') ? parseFloat(dinheiroTotalVal) : null;
+    
+    const mercadoAtual = document.getElementById('mercado').value.trim();
+    const dinheiroTotalAtual = document.getElementById('dinheiroTotal').value;
 
     const totalGeral = itens.reduce((acc, i) => acc + i.quantidade * i.valor, 0);
-    const sobra = (dinheiroTotal !== null && !isNaN(dinheiroTotal)) ? parseFloat((dinheiroTotal - totalGeral).toFixed(2)) : null;
-
-    const dadosParaSalvar = {
-      dataCompra: dataFormatada,
-      mercado: mercado,
-      dinheiroTotal: dinheiroTotal,
-      sobra: sobra,
-      itens: itens
+    
+    const dadosCompra = {
+      dataCompra: new Date().toLocaleDateString('pt-BR'),
+      mercado: mercadoAtual || '',
+      dinheiroTotal: dinheiroTotalAtual !== '' ? parseFloat(dinheiroTotalAtual) : null,
+      totalGeral: totalGeral,
+      itens: [...itens]
     };
-
-    const dados = JSON.stringify(dadosParaSalvar, null, 2);
-    const blob = new Blob([dados], {type: "application/json"});
-    const url = URL.createObjectURL(blob);
-
-    const dataHoraNome = formatarDataParaNomeArquivo(dataAtual);
-    const nomeArquivo = `compras_${dataHoraNome}.json`;
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = nomeArquivo;
-    a.click();
-    URL.revokeObjectURL(url);
+    historicoCompras.push(dadosCompra);
+    
+    itens = [];
+    document.getElementById('mercado').value = '';
+    document.getElementById('dinheiroTotal').value = '';
+    
+    atualizarTabela();
+    atualizarHistorico();
+    alert("Lista de compras salva no histórico!");
   }
 
-  function exportarPDF(){
+  function removerDoHistorico(index) {
+    if(confirm("Deseja remover este item do histórico?")){
+      historicoCompras.splice(index, 1);
+      atualizarHistorico();
+    }
+  }
+
+  function abrirCompraDoHistorico(index) {
+    if(confirm("Deseja carregar esta compra para a lista atual? A lista atual será apagada.")){
+      const compraParaAbrir = historicoCompras[index];
+      
+      itens = [...compraParaAbrir.itens];
+      document.getElementById('mercado').value = compraParaAbrir.mercado || '';
+      document.getElementById('dinheiroTotal').value = (compraParaAbrir.dinheiroTotal !== undefined && compraParaAbrir.dinheiroTotal !== null) ? compraParaAbrir.dinheiroTotal : '';
+      
+      atualizarTabela();
+      alert("Compra do histórico carregada na lista atual!");
+    }
+  }
+  
+  function exportarListaAtualPDF(){
     if(itens.length === 0){
       alert("Nenhum item para exportar.");
       return;
     }
+    
     const { jsPDF } = window.jspdf;
     let doc = new jsPDF();
     const dataAtual = new Date();
@@ -434,61 +647,43 @@
       y += 8;
     }
     
+    const currentTotalGeral = itens.reduce((acc, i) => acc + i.quantidade * i.valor, 0);
+
+    let startYItems = y + 5;
     itens.forEach(item => {
       let linha = `${item.produto} - Qtd: ${item.quantidade} - Unit: R$ ${item.valor.toFixed(2).replace('.', ',')} - Total: R$ ${(item.quantidade * item.valor).toFixed(2).replace('.', ',')}`;
-      doc.text(linha, 10, y);
-      y += 10;
-      if(y > 280){
+      doc.text(linha, 10, startYItems);
+      startYItems += 10;
+      if(startYItems > 280){
         doc.addPage();
-        y = 10;
+        startYItems = 10;
       }
     });
-    const totalGeral = itens.reduce((acc, i) => acc + i.quantidade * i.valor, 0);
-    doc.text(`TOTAL: R$ ${totalGeral.toFixed(2).replace('.', ',')}`, 10, y + 10);
+
+    doc.text(`TOTAL: R$ ${currentTotalGeral.toFixed(2).replace('.', ',')}`, 10, startYItems + 10);
 
     if(dinheiroTotal !== null && !isNaN(dinheiroTotal)){
-      const sobra = dinheiroTotal - totalGeral;
-      doc.text(`Dinheiro que sobra: R$ ${sobra.toFixed(2).replace('.', ',')}`, 10, y + 18);
+      const sobra = dinheiroTotal - currentTotalGeral;
+      doc.text(`Dinheiro que sobra: R$ ${sobra.toFixed(2).replace('.', ',')}`, 10, startYItems + 18);
     }
 
     doc.save(`lista_compras_${formatarDataParaNomeArquivo(dataAtual)}.pdf`);
   }
+  
+  function exportarHistoricoPDF(index) {
+    const compra = historicoCompras[index];
+    if (!compra) {
+      alert("Compra não encontrada no histórico.");
+      return;
+    }
 
-  /* Abrir arquivo JSON */
-  inputFile.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = evt => {
-      try {
-        const data = JSON.parse(evt.target.result);
-        if(data.itens && Array.isArray(data.itens)){
-          itens = data.itens;
-          document.getElementById('mercado').value = data.mercado || '';
-          document.getElementById('dinheiroTotal').value = (data.dinheiroTotal !== undefined && data.dinheiroTotal !== null) ? data.dinheiroTotal : '';
-          atualizarTabela();
-        } else {
-          alert('Arquivo inválido!');
-        }
-      } catch {
-        alert('Erro ao ler o arquivo!');
-      }
-    };
-    reader.readAsText(file);
-    // limpa o input para poder abrir o mesmo arquivo novamente, se quiser
-    e.target.value = '';
-  });
+    const { jsPDF } = window.jspdf;
+    let doc = new jsPDF();
 
-  /* Atualiza saldo se mudar dinheiro total ou mercado */
-  document.getElementById('dinheiroTotal').addEventListener('input', atualizarTabela);
-  document.getElementById('mercado').addEventListener('input', salvarLocalStorage);
+    doc.setFontSize(18);
+    doc.text("Lista de Compras - Histórico", 10, 10);
 
-  // Inicialização do aplicativo
-  window.onload = function() {
-    carregarLocalStorage();
-    atualizarTabela();
-  }
-</script>
-
-</body>
-</html>
+    doc.setFontSize(12);
+    doc.text(`Data da compra: ${compra.dataCompra}`, 10, 18);
+    
+    
