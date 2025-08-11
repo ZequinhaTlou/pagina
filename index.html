@@ -393,7 +393,6 @@
   let editIndex = -1;
 
   const form = document.getElementById('form');
-  let helpModal;
 
   /* Carrega dados do localStorage */
   function carregarLocalStorage() {
@@ -685,5 +684,7 @@
 
     doc.setFontSize(12);
     doc.text(`Data da compra: ${compra.dataCompra}`, 10, 18);
+    
+    let y = 28;
     
     
