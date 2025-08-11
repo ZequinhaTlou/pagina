@@ -299,7 +299,7 @@
 <header>
   <h1>Compras do Mês</h1>
   <p>Adicione, edite e remova itens. Salve em PDF para manter seu controle de compras.</p>
-  <button class="help-button" onclick="openModal()">❓</button>
+  <button class="help-button" id="helpButton">❓</button>
 </header>
 
 <div class="card">
@@ -353,7 +353,7 @@
 
 <div id="helpModal" class="modal">
   <div class="modal-content">
-    <span class="close-button" onclick="closeModal()">&times;</span>
+    <span class="close-button">&times;</span>
     <h2>Como usar o Compras do Mês</h2>
     <p>
       Este aplicativo foi criado para ajudá-lo a controlar suas compras de forma simples e rápida.
@@ -364,7 +364,7 @@
     </p>
     <p>
       📝 **Gerenciar a Lista:**<br>
-      - Use os botões ✅ e ❌ na tabela para editar ou remover um item.
+      - Use os botões ✏️ e 🗑️ na tabela para editar ou remover um item.
       - A tabela calcula o total geral de todos os itens.
       - Se você preencher o campo "Dinheiro total para gastos", o aplicativo mostrará quanto dinheiro sobra.
     </p>
@@ -393,6 +393,27 @@
   let editIndex = -1;
 
   const form = document.getElementById('form');
+  
+  function openModal() {
+    const helpModal = document.getElementById('helpModal');
+    if (helpModal) {
+      helpModal.style.display = "block";
+    }
+  }
+
+  function closeModal() {
+    const helpModal = document.getElementById('helpModal');
+    if (helpModal) {
+      helpModal.style.display = "none";
+    }
+  }
+
+  window.onclick = function(event) {
+    const helpModal = document.getElementById('helpModal');
+    if (helpModal && event.target === helpModal) {
+      closeModal();
+    }
+  }
 
   /* Carrega dados do localStorage */
   function carregarLocalStorage() {
@@ -450,8 +471,8 @@
           <td>R$ ${item.valor.toFixed(2).replace('.', ',')}</td>
           <td>R$ ${total.toFixed(2).replace('.', ',')}</td>
           <td class="acoes">
-            <button class="edit" onclick="editarItem(${index})" aria-label="Editar item">✅</button>
-            <button class="delete" onclick="removerItem(${index})" aria-label="Remover item">❌</button>
+            <button class="edit" onclick="editarItem(${index})" aria-label="Editar item">✏️</button>
+            <button class="delete" onclick="removerItem(${index})" aria-label="Remover item">🗑️</button>
           </td>
         </tr>
       `;
@@ -687,4 +708,58 @@
     
     let y = 28;
     
+    if (compra.mercado) {
+      doc.text(`Mercado: ${compra.mercado}`, 10, y);
+      y += 8;
+    }
+    if (compra.dinheiroTotal !== null && !isNaN(compra.dinheiroTotal)) {
+        doc.text(`Dinheiro total: R$ ${compra.dinheiroTotal.toFixed(2).replace('.', ',')}`, 10, y);
+        y += 8;
+    }
     
+    let startYItems = y + 5;
+    compra.itens.forEach(item => {
+      let linha = `${item.produto} - Qtd: ${item.quantidade} - Unit: R$ ${item.valor.toFixed(2).replace('.', ',')} - Total: R$ ${(item.quantidade * item.valor).toFixed(2).replace('.', ',')}`;
+      doc.text(linha, 10, startYItems);
+      startYItems += 10;
+      if(startYItems > 280){
+        doc.addPage();
+        startYItems = 10;
+      }
+    });
+
+    doc.text(`TOTAL: R$ ${compra.totalGeral.toFixed(2).replace('.', ',')}`, 10, startYItems + 10);
+    
+    if (compra.dinheiroTotal !== null && !isNaN(compra.dinheiroTotal)) {
+        const sobra = compra.dinheiroTotal - compra.totalGeral;
+        doc.text(`Dinheiro que sobra: R$ ${sobra.toFixed(2).replace('.', ',')}`, 10, startYItems + 18);
+    }
+
+    doc.save(`compra_historico_${compra.dataCompra}.pdf`);
+  }
+
+  // Bloco de inicialização: roda quando a página está completamente carregada
+  window.onload = function() {
+    carregarLocalStorage();
+
+    // --- NOVA ABORDAGEM PARA O BOTÃO DE AJUDA ---
+    // 1. Encontra o botão de ajuda e o botão de fechar
+    const helpButton = document.getElementById('helpButton');
+    const closeButton = document.querySelector('#helpModal .close-button');
+
+    // 2. Adiciona os "ouvintes" de evento de clique
+    if (helpButton) {
+      helpButton.addEventListener('click', openModal);
+    }
+    if (closeButton) {
+      closeButton.addEventListener('click', closeModal);
+    }
+  }
+
+  /* Atualiza saldo se mudar dinheiro total ou mercado */
+  document.getElementById('dinheiroTotal').addEventListener('input', atualizarTabela);
+  document.getElementById('mercado').addEventListener('input', salvarLocalStorage);
+</script>
+
+</body>
+</html>
