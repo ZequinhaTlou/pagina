@@ -937,9 +937,17 @@
                     stopBarcodeScanner();
                     return;
                 }
-                const firstDeviceId = videoInputDevices[0].deviceId;
-                
-                codeReader.decodeFromVideoDevice(firstDeviceId, 'scanner-video', (result, err) => {
+
+                // Tenta encontrar a câmera traseira (com label 'back' ou 'environment')
+                const rearCamera = videoInputDevices.find(device => 
+                    device.label.toLowerCase().includes('back') || 
+                    device.label.toLowerCase().includes('environment')
+                );
+
+                // Se encontrar a câmera traseira, usa ela. Senão, usa a primeira disponível.
+                const deviceId = rearCamera ? rearCamera.deviceId : videoInputDevices[0].deviceId;
+
+                codeReader.decodeFromVideoDevice(deviceId, 'scanner-video', (result, err) => {
                     if (result) {
                         console.log('Código de barras encontrado:', result.text);
                         stopBarcodeScanner();
