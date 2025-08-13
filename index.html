@@ -334,6 +334,15 @@
             background-color: #555;
             cursor: not-allowed;
         }
+
+        /* Novo estilo para a mensagem de feedback do scanner */
+        #scanner-feedback {
+            color: #e74c3c; /* Cor de alerta */
+            font-weight: bold;
+            margin-top: 5px;
+            text-align: center;
+            min-height: 1.2em; /* Para manter o espaço */
+        }
     </style>
 </head>
 <body>
@@ -357,7 +366,7 @@
             <video id="scanner-video"></video>
             <button type="button" onclick="stopBarcodeScanner()" style="margin-top: 10px;">Parar Escaneamento</button>
         </div>
-        <input type="number" id="quantidade" placeholder="Quantidade" min="0.1" step="0.1" required />
+        <div id="scanner-feedback"></div> <input type="number" id="quantidade" placeholder="Quantidade" min="0.1" step="0.1" required />
         <input type="number" id="valor" placeholder="Valor unitário" step="0.01" required />
         <button type="submit" class="add">Adicionar</button>
     </form>
@@ -469,6 +478,7 @@
     const videoElement = document.getElementById('scanner-video');
     const produtoInput = document.getElementById('produto');
     const scanBtn = document.querySelector('.scan-btn');
+    const scannerFeedback = document.getElementById('scanner-feedback'); // Novo elemento de feedback
     
     // Inicializa o leitor de código de barras
     let codeReader = new ZXing.BrowserMultiFormatReader();
@@ -651,6 +661,7 @@
         atualizarTabela();
         this.reset();
         searchInput.value = '';
+        scannerFeedback.textContent = ''; // Limpa a mensagem de feedback
     });
 
     function editarItem(index){
@@ -659,6 +670,7 @@
         document.getElementById('quantidade').value = itens[index].quantidade;
         document.getElementById('valor').value = itens[index].valor;
         editIndex = index;
+        scannerFeedback.textContent = ''; // Limpa a mensagem de feedback
     }
 
     function removerItem(index){
@@ -677,6 +689,7 @@
             document.getElementById('dinheiroTotal').value = '';
             atualizarTabela();
             searchInput.value = '';
+            scannerFeedback.textContent = ''; // Limpa a mensagem de feedback
         }
     }
 
@@ -719,6 +732,7 @@
         atualizarTabela();
         atualizarHistorico();
         searchInput.value = '';
+        scannerFeedback.textContent = ''; // Limpa a mensagem de feedback
         alert("Lista de compras salva no histórico!");
     }
 
@@ -743,6 +757,7 @@
             
             atualizarTabela();
             searchInput.value = '';
+            scannerFeedback.textContent = ''; // Limpa a mensagem de feedback
             alert("Compra do histórico carregada na lista atual!");
         }
     }
@@ -826,7 +841,7 @@
         let y = 28;
         
         if (compra.mercado) {
-            doc.text(`Mercado: ${compra.mercado}`, 10, y);
+            doc.text(`Mercado: ${compa.mercado}`, 10, y);
             y += 8;
         }
         if (compra.dinheiroTotal !== null && !isNaN(compra.dinheiroTotal)) {
@@ -924,16 +939,18 @@
         });
     });
 
-    // --- NOVAS FUNÇÕES PARA O SCANNER E API ---
+    // --- FUNÇÕES DO SCANNER E API ---
     function startBarcodeScanner() {
         console.log('Iniciando o scanner...');
         scannerContainer.style.display = 'block';
         scanBtn.disabled = true;
+        scannerFeedback.textContent = 'Aguardando leitura do código...'; // Mensagem inicial
 
         codeReader.listVideoInputDevices()
             .then((videoInputDevices) => {
                 if (videoInputDevices.length === 0) {
                     alert('Nenhuma câmera encontrada. Por favor, conecte uma câmera e tente novamente.');
+                    scannerFeedback.textContent = 'Erro: Nenhuma câmera encontrada.';
                     stopBarcodeScanner();
                     return;
                 }
@@ -941,26 +958,33 @@
                 // Tenta encontrar a câmera traseira (com label 'back' ou 'environment')
                 const rearCamera = videoInputDevices.find(device => 
                     device.label.toLowerCase().includes('back') || 
-                    device.label.toLowerCase().includes('environment')
+                    device.label.toLowerCase().includes('environment') ||
+                    device.kind === 'videoinput' && device.label.toLowerCase().includes('camera 2') // Tentativa extra para Android
                 );
 
                 // Se encontrar a câmera traseira, usa ela. Senão, usa a primeira disponível.
                 const deviceId = rearCamera ? rearCamera.deviceId : videoInputDevices[0].deviceId;
+                console.log('Dispositivo de câmera selecionado:', rearCamera ? rearCamera.label : videoInputDevices[0].label);
+
 
                 codeReader.decodeFromVideoDevice(deviceId, 'scanner-video', (result, err) => {
                     if (result) {
                         console.log('Código de barras encontrado:', result.text);
+                        scannerFeedback.textContent = 'Código de barras lido! Buscando informações...';
                         stopBarcodeScanner();
                         fetchProductInfo(result.text);
                     }
                     if (err && !(err instanceof ZXing.NotFoundException)) {
                         console.error('Erro ao decodificar:', err);
+                        scannerFeedback.textContent = 'Erro na leitura. Tente novamente.';
+                        // Não parar o scanner para que o usuário possa tentar novamente
                     }
                 });
             })
             .catch((err) => {
                 console.error('Erro ao acessar a câmera:', err);
                 alert('Erro ao acessar a câmera. Verifique se o navegador tem permissão.');
+                scannerFeedback.textContent = 'Erro ao acessar a câmera. Verifique permissões.';
                 stopBarcodeScanner();
             });
     }
@@ -970,40 +994,40 @@
         codeReader.reset();
         scannerContainer.style.display = 'none';
         scanBtn.disabled = false;
+        // A mensagem de feedback não é limpa aqui, mas sim ao adicionar item ou limpar campos.
     }
 
     function fetchProductInfo(barcode) {
         console.log('Buscando produto na API com o código:', barcode);
+        scannerFeedback.textContent = 'Buscando informações do produto...';
         const api_url = `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`;
 
         fetch(api_url)
             .then(response => response.json())
             .then(data => {
                 if (data.status === 1) {
-                    const productName = data.product.product_name || 'Produto sem nome';
-                    alert(`Produto encontrado: ${productName}.`);
+                    const productName = data.product.product_name || 'Produto sem nome encontrado';
                     produtoInput.value = productName;
                     document.getElementById('quantidade').value = 1;
-                    // A API não tem preço exato, então o campo de valor fica para o usuário preencher.
                     document.getElementById('valor').focus();
+                    scannerFeedback.textContent = `Produto encontrado: ${productName}.`; // Feedback de sucesso
                 } else {
-                    alert('Produto não encontrado no banco de dados do Open Food Facts. Por favor, insira manualmente.');
-                    produtoInput.value = '';
+                    produtoInput.value = ''; // Limpa o campo do produto
+                    scannerFeedback.textContent = 'Produto não encontrado na base de dados. Digite manualmente.'; // Feedback de não encontrado
                 }
             })
             .catch(error => {
                 console.error('Erro na requisição da API:', error);
-                alert('Ocorreu um erro ao buscar o produto. Verifique sua conexão e tente novamente.');
+                scannerFeedback.textContent = 'Erro ao buscar o produto. Verifique sua conexão.'; // Feedback de erro de rede
             });
     }
-    // --- FIM DAS NOVAS FUNÇÕES ---
+    // --- FIM DAS FUNÇÕES DO SCANNER E API ---
     
     // Event listeners para o botão de ajuda e o modal
     document.getElementById('helpButton').onclick = openModal;
     document.querySelector('.close-button').onclick = closeModal;
     window.onload = function() {
         carregarLocalStorage();
-        // Os arquivos de PWA (manifest e service worker) não podem ser incluídos aqui, por isso essa parte foi removida.
     };
 </script>
 </body>
